@@ -11,8 +11,7 @@ lxml = "*"
 peewee = "*"
 click = "*"
 grequests = "*"
-mysqlclient = "*"
-"psycopg2" = "*"
+pymysql = "*"
 
 
 [requires]
@@ -24,3 +23,4 @@ python_version = "3.5"
 
 bpython = "*"
 requests = "*"
+snakeviz = "*"

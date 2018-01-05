@@ -25,7 +25,7 @@ class Scraper:
 
     def scrape_all(self, pagegen):
         urls = itertools.starmap(self.page_link, pagegen)
-        buf = storage.InsertBuffer(self._dbconn, storage.Torrent, 1000)
+        buf = storage.GeventInsertBuffer(self._dbconn, storage.Torrent, 1000)
         with buf:
             for req in self._httpclient.multiget(urls):
                 resp = req.response

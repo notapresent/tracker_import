@@ -1,4 +1,4 @@
-# from gevent import monkey; monkey.patch_all()
+from gevent import monkey; monkey.patch_all()
 import logging
 import click
 import storage
@@ -13,9 +13,8 @@ logger = logging.getLogger(__name__)
 @click.group()
 @click.pass_context
 def cli(ctx):
-    storage.connect(settings.DATABASE_URL)
     init_logging(logging.INFO)
-    ctx.obj['db'] = storage.get_db()
+    ctx.obj['db'] = storage.init(settings.DATABASE_URL)
 
 
 @cli.command()
@@ -52,7 +51,9 @@ def init_logging(level=logging.INFO):
     """Set up logging parameters"""
     logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=level)
 
-    warn_only = ['requests.packages.urllib3', 'urllib3', 'chardet', 'peewee']
+    warn_only = ['requests.packages.urllib3', 'urllib3', 'chardet'
+    # , 'peewee'
+    ]
     for pkgname in warn_only:
         logging.getLogger(pkgname).setLevel(logging.WARN)
 
