@@ -6,12 +6,17 @@ class Timer:
         self._end = None
 
     def __enter__(self):
-        self._start = time.time()
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._end = time.time()
+        self.stop()
 
+    def start(self):
+        self._start = time.time()
+
+    def stop(self):
+        self._end = time.time()
 
     @property
     def elapsed(self):
