@@ -20,22 +20,25 @@ def cli(ctx):
 @cli.command()
 @click.pass_context
 def createdb(ctx):
-    storage.create_tables()
+    with storage.DBContext(ctx.obj['db']):
+        storage.create_tables()
 
 
 @cli.command()
 @click.pass_context
 def dropdb(ctx):
-    storage.drop_tables()
+    with storage.DBContext(ctx.obj['db']):
+        storage.drop_tables()
 
 
 @cli.command()
 @click.pass_context
 def run(ctx):
     """Run scrape"""
-    httpc = grhttpc.GRequestsHttpClient(settings.CONCURRENCY)
-    scraper = scraping.Scraper(httpc, ctx.obj['db'], settings)
-    scraper.run()
+    with storage.DBContext(ctx.obj['db']):
+        httpc = grhttpc.GRequestsHttpClient(settings.CONCURRENCY)
+        scraper = scraping.Scraper(httpc, ctx.obj['db'], settings)
+        scraper.run()
 
 
 @cli.command()

@@ -33,7 +33,7 @@ class BaseModel(Model):
 
 class Torrent(BaseModel):
     """Represents torrent"""
-    tid = PrimaryKeyField()
+    tid = IntegerField(primary_key=True)
     fid = SmallIntegerField()
     asize = IntegerField()   # approximate size, Kb
     title = CharField(max_length=512)
@@ -73,14 +73,15 @@ class InsertBuffer:
 
     def _insert_batch(self):
         """Remove one batch from buffer and insert to database"""
+        chunk = self._chunk()
         with perfstats.Timer() as t:
-            chunk = self._chunk()
             self._do_insert(chunk)
         logger.info('Inserted %d rows in %.3f sec.' % (len(chunk), t.elapsed))
 
     def _do_insert(self, chunk):
         try:
-            self._db.connect()
+            if self._db.is_closed():
+                self._db.connect()
             with self._db.transaction():
                 self._model.insert_many(chunk).upsert(upsert=True).execute()
         finally:
@@ -136,3 +137,15 @@ class GeventInsertBuffer(InsertBuffer):
 def split_chunk(lst, size):
     """Cut a chunk from a list. Returns (chunk, remaining_list)"""
     return lst[:size], lst[size:]
+
+
+class DBContext:
+    def __init__(self, db):
+        self._db = db
+
+    def __enter__(self):
+        if self._db.is_closed():
+            self._db.connect()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._db.close()
