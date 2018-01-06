@@ -75,16 +75,11 @@ class InsertBuffer:
         chunk = self._chunk()
         with perfstats.Timer() as t:
             self._do_insert(chunk)
-        logger.info('Inserted %d rows in %.3f sec.' % (len(chunk), t.elapsed))
+        logger.debug('%d rows in %.3f sec.' % (len(chunk), t.elapsed))
 
     def _do_insert(self, chunk):
-        try:
-            if self._db.is_closed():
-                self._db.connect()
-            with self._db.transaction():
-                self._model.insert_many(chunk).upsert(upsert=True).execute()
-        finally:
-            self._db.close()
+        with DBContext(self._db), self._db.transaction():
+            self._model.insert_many(chunk).upsert(upsert=True).execute()
 
     def _chunk(self):
         chunk, self._buf = split_chunk(self._buf, self._batch_size)
@@ -122,11 +117,12 @@ class GeventInsertBuffer(InsertBuffer):
         greenlet.link(self._greenlet_done)
         greenlet.start()
 
+
     def _greenlet_done(self, g):
         t = g._timer
         t.stop()
         self._greenlets.remove(g)
-        logger.info('%d rows in %.3f sec. %d chunks pending' % (g._chunk_length, t.elapsed, len(self._greenlets)))
+        logger.debug('%d rows in %.3f sec. %d chunks pending' % (g._chunk_length, t.elapsed, len(self._greenlets)))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         super().__exit__(exc_type, exc_val, exc_tb)
