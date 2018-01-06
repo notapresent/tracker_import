@@ -18,8 +18,8 @@ class Scraper:
         fids = self.forum_ids()
         fid_npages = list(self.forum_npages(fids))
         logger.info('%d pages in %d forums' % (sum(map(lambda t: t[1], fid_npages)), len(fid_npages)))
-        pagegen = page_gen(fid_npages)
-        self.scrape_all(pagegen)
+        forum_pages = ForumPages(fid_npages)
+        self.scrape_all(forum_pages)
 
         logger.info('Scrape finished')
 
@@ -34,10 +34,10 @@ class Scraper:
                 elif not resp.ok:
                     logger.warn("%s - %s (%.3f s)" % (req.url, resp.reason, resp.elapsed.total_seconds()))
                 else:
-                    # logger.debug("%s - %s (%.3f s)" % (req.url, resp.reason, resp.elapsed.total_seconds()))
-                    resp.encoding = 'windows-1251'
+                    resp.encoding = self._cfg.FORUM_ENCODING
                     html = resp.text
-                    torrent_dicts = parsing.extract_torrents(html, req.url)
+                    torrent_dicts = list(parsing.extract_torrents(html, req.url))
+                    logger.debug("%s - %s (%.3f s) - %d" % (req.url, resp.reason, resp.elapsed.total_seconds(), len(torrent_dicts)))
 
                     for tdict in torrent_dicts:
                         tdict['fid'] = 0                # TODO
@@ -64,9 +64,16 @@ class Scraper:
             return "%sviewforum.php?f=%d" % (self._cfg.FORUM_URL, fid)
 
 
-def page_gen(tuples):     # [(fid, npages), ...] -> [(fid, page1), (fid, page2), ...]
+def all_pages(fid, num_pages):
+    return zip(itertools.repeat(fid), range(1, num_pages + 1))
 
-    def explode_tuple(t):
-        return zip(itertools.repeat(t[0]), range(1, t[1] + 1))
 
-    return itertools.chain.from_iterable(map(explode_tuple, tuples))
+class ForumPages:
+    def __init__(self, tuples):
+        self.tuples = tuples
+
+    def __len__(self):
+        return sum([t[1] for t in self.tuples])
+
+    def __iter__(self):
+        return itertools.chain.from_iterable(itertools.starmap(all_pages, self.tuples))
