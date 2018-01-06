@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 def extract_forum_ids(html, base_url):
     """ html -> [fid, ...]"""
     tree = lxml.html.fromstring(html, base_url=base_url)
-    container =  tree.xpath('//*[@id="forums_wrap"]/table/tr/td[1]/div[4]')[0]
+    container = tree.xpath('//*[@id="forums_wrap"]/table/tr/td[1]/div[4]')[0]
     links = container.xpath(".//span[@class='sf_title']/a[@href]")
     for link in links:
         fid_str = link.attrib['href'].split("=")[1]

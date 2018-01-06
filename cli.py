@@ -1,4 +1,5 @@
-from gevent import monkey; monkey.patch_all()
+from gevent import monkey
+monkey.patch_all()  # noqa
 import logging
 import click
 import storage
@@ -52,11 +53,11 @@ def newrun(ctx):
 
 def init_logging(level=logging.INFO):
     """Set up logging parameters"""
-    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=level)
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=level)
 
-    warn_only = ['requests.packages.urllib3', 'urllib3', 'chardet'
-    # , 'peewee'
-    ]
+    warn_only = ['requests.packages.urllib3', 'urllib3', 'chardet']
     for pkgname in warn_only:
         logging.getLogger(pkgname).setLevel(logging.WARN)
 

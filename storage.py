@@ -1,6 +1,5 @@
 import logging
 from peewee import Model, PrimaryKeyField, IntegerField, SmallIntegerField, CharField, Proxy
-#, DateTimeField, ForeignKeyField, BigIntegerField
 import gevent
 from playhouse import db_url
 import perfstats
@@ -127,7 +126,7 @@ class GeventInsertBuffer(InsertBuffer):
         t = g._timer
         t.stop()
         self._greenlets.remove(g)
-        logger.info('Inserted %d rows in %.3f sec. %d greenlets to do, Buf: %d' % (g._chunk_length, t.elapsed, len(self._greenlets), len(self._buf)))
+        logger.info('%d rows in %.3f sec. %d chunks pending' % (g._chunk_length, t.elapsed, len(self._greenlets)))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         super().__exit__(exc_type, exc_val, exc_tb)

@@ -3,7 +3,7 @@ import os
 # Required settings
 DATABASE_URL = os.environ['DATABASE_URL']
 
-FORUM_URL =  os.environ['FORUM_URL']
+FORUM_URL = os.environ['FORUM_URL']
 
 # Optional settins
 DEBUG = os.environ.get('DEBUG', False)
