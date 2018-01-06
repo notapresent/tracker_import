@@ -69,6 +69,18 @@ def parse_asize(size_str):
     return int(float(size) * multiplier)
 
 
+def parse_body(html, base_url):
+    tree = lxml.html.fromstring(html, base_url=base_url)
+    el = tree.xpath('//div[@class="post_wrap"]/div[@class="post_body"]')[0]
+    attachment_blocks = el.xpath('.//fieldset[@class="attach"]')
+    for block in attachment_blocks:
+      block.getparent().remove(block)
+
+    return {
+        'body': lxml.html.tostring(el, encoding='unicode')
+    }
+
+
 class ParseError(Exception):
     pass
 
