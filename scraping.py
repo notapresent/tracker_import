@@ -3,6 +3,7 @@ import parsing
 import itertools
 import requests
 import grequests
+import storage
 from gevent.pool import Pool
 
 
@@ -30,21 +31,26 @@ class Scraper:
         logger.info('Scrape finished')
 
     def scrape_all(self, pagegen):
+        store = storage.JsonlStorage('./data', 10000)
         urls = itertools.starmap(self.page_link, pagegen)
         for req in self._httpclient.multiget(urls):
             resp = req.response
             if resp is None:
                 logger.warn("%s - %s" % (req.url, req.exception))
+                continue
+
             elif not resp.ok:
                 logger.warn("%s - %s (%.3f s)" % (req.url, resp.reason, resp.elapsed.total_seconds()))
-            else:
-                resp.encoding = FORUM_ENCODING
-                html = resp.text
-                torrent_dicts = list(parsing.extract_torrents(html, req.url))
-                logger.debug("%s - %s (%.3f s) - %d" % (req.url, resp.reason, resp.elapsed.total_seconds(), len(torrent_dicts)))
+                continue
 
-                for tdict in torrent_dicts:
-                    tdict['fid'] = 0                # TODO
+            resp.encoding = FORUM_ENCODING
+            html = resp.text
+            torrent_dicts = list(parsing.extract_torrents(html, req.url))
+            logger.debug("%s - (%.3f s) - %d" % (req.url, resp.elapsed.total_seconds(), len(torrent_dicts)))
+
+            store.put_all(torrent_dicts)
+            # for tdict in torrent_dicts:
+            #     tdict['fid'] = 0                # TODO
 
     def forum_ids(self):
         url = self._cfg.FORUM_URL
@@ -85,14 +91,7 @@ class ForumPages:
 class GRequestsHttpClient:
     def __init__(self, concurrency=CONCURRENCY):
         self._concurrency = concurrency
-        self._session = grequests.Session()
-        adapter = requests.adapters.HTTPAdapter(
-            max_retries=5,
-            pool_maxsize=concurrency
-        )
-        self._session.mount('http://', adapter)
-        self._session.mount('https://', adapter)
-
+        self._session = make_session(concurrency)
         self._pool = Pool(concurrency)
 
     def multiget(self, urls):
@@ -105,3 +104,14 @@ class GRequestsHttpClient:
             yield request
 
         self._pool.join()
+
+
+def make_session(concurrency):
+    session = grequests.Session()
+    adapter = requests.adapters.HTTPAdapter(
+        max_retries=5,
+        pool_maxsize=concurrency
+    )
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
