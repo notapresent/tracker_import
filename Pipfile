@@ -8,10 +8,8 @@ name = "pypi"
 [packages]
 
 lxml = "*"
-peewee = "*"
 click = "*"
 grequests = "*"
-pymysql = "*"
 
 
 [requires]
