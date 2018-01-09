@@ -2,6 +2,7 @@ import logging
 import click
 import scraping
 import settings
+import urlbuilder
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,8 @@ def cli(ctx):
 def run(ctx):
     """Run scrape"""
     httpc = scraping.GRequestsHttpClient()
-    scraper = scraping.Scraper(httpc, settings)
+    url_builder = urlbuilder.URLBuilder(settings.FORUM_URL)
+    scraper = scraping.Scraper(httpc, url_builder, settings)
     scraper.run()
 
 

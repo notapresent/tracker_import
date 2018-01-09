@@ -13,13 +13,13 @@ logger = logging.getLogger(__name__)
 
 FORUM_ENCODING = 'windows-1251'
 CONCURRENCY = 16
-TORRENTS_PER_PAGE = 50
 
 
 class Scraper:
-    def __init__(self, httpclient, settings):
+    def __init__(self, httpclient, url_builder, settings):
         self._cfg = settings
         self._httpclient = httpclient
+        self._urlbuilder = url_builder
 
     def run(self):
         logger.info('Starting scrape')
@@ -32,7 +32,7 @@ class Scraper:
 
     def scrape_all(self, pagegen):
         store = storage.JsonlStorage('./data', 10000)
-        urls = itertools.starmap(self.page_link, pagegen)
+        urls = itertools.starmap(self._urlbuilder.page_url, pagegen)
         for req in self._httpclient.multiget(urls):
             resp = req.response
             if resp is None:
@@ -53,24 +53,17 @@ class Scraper:
             #     tdict['fid'] = 0                # TODO
 
     def forum_ids(self):
-        url = self._cfg.FORUM_URL
+        url = self._urlbuilder.map_url()
         maprequest = next(self._httpclient.multiget([url]))
         html = maprequest.response.text
         return parsing.extract_forum_ids(html, url)
 
     def forum_npages(self, fids):
-        url2fid = {self.page_link(fid): fid for fid in fids}
+        url2fid = {self._urlbuilder.page_url(fid): fid for fid in fids}
         for req in self._httpclient.multiget(url2fid.keys()):
             html = req.response.text
             npages = parsing.extract_num_pages(html, req.url)
             yield (url2fid[req.url], npages)
-
-    def page_link(self, fid, page=1):
-        offset = TORRENTS_PER_PAGE * (page - 1)
-        if offset:
-            return "%sviewforum.php?f=%d&start=%d" % (self._cfg.FORUM_URL, fid, offset)
-        else:
-            return "%sviewforum.php?f=%d" % (self._cfg.FORUM_URL, fid)
 
 
 def all_pages(fid, num_pages):
