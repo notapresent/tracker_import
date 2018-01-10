@@ -3,7 +3,6 @@ import parsing
 import itertools
 import requests
 import grequests
-import storage
 from gevent.pool import Pool
 
 
@@ -16,10 +15,11 @@ CONCURRENCY = 16
 
 
 class Scraper:
-    def __init__(self, httpclient, url_builder, settings):
+    def __init__(self, httpclient, url_builder, store, settings):
         self._cfg = settings
         self._httpclient = httpclient
         self._urlbuilder = url_builder
+        self._store = store
 
     def run(self):
         logger.info('Starting scrape')
@@ -31,7 +31,6 @@ class Scraper:
         logger.info('Scrape finished')
 
     def scrape_all(self, pagegen):
-        store = storage.JsonlStorage('./data', 10000)
         urls = itertools.starmap(self._urlbuilder.page_url, pagegen)
         for req in self._httpclient.multiget(urls):
             resp = req.response
@@ -48,9 +47,8 @@ class Scraper:
             torrent_dicts = list(parsing.extract_torrents(html, req.url))
             logger.debug("%s - (%.3f s) - %d" % (req.url, resp.elapsed.total_seconds(), len(torrent_dicts)))
 
-            store.put_all(torrent_dicts)
-            # for tdict in torrent_dicts:
-            #     tdict['fid'] = 0                # TODO
+            self._store.put_all(torrent_dicts)
+
 
     def forum_ids(self):
         url = self._urlbuilder.map_url()

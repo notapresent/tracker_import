@@ -1,6 +1,7 @@
 import logging
 import perfstats
 import os
+import glob
 import ujson as json
 
 
@@ -8,6 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 class JsonlStorage:
+
+    SUFFIX = 'jsonl'
+
     def __init__(self, dirpath, chunk_size):
         self._seq = 0
         self._nitems = 0
@@ -30,6 +34,10 @@ class JsonlStorage:
         if not os.path.exists(self._dirpath):
             os.makedirs(self._dirpath, exist_ok=True)
         assert os.access(self._dirpath, os.W_OK)
+
+    def purge(self):
+        for fn in glob.glob("%s/*.%s" % (self._dirpath, self.SUFFIX)):
+            os.unlink(fn)
 
     def next_chunk(self):
         self.closefile()
@@ -54,5 +62,5 @@ class JsonlStorage:
         self.closefile()
 
     def filename(self):
-        return "%s/%d.jsonl" % (self._dirpath, self._seq)
+        return "%s/%d%s" % (self._dirpath, self._seq, self.SUFFIX)
 

@@ -3,6 +3,7 @@ import click
 import scraping
 import settings
 import urlbuilder
+import storage
 
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 @click.pass_context
 def cli(ctx):
     init_logging(settings.LOG_LEVEL)
-
+    ctx.obj['storage'] = storage.JsonlStorage('./data', 10000)
 
 @cli.command()
 @click.pass_context
@@ -20,7 +21,7 @@ def run(ctx):
     """Run scrape"""
     httpc = scraping.GRequestsHttpClient()
     url_builder = urlbuilder.URLBuilder(settings.FORUM_URL)
-    scraper = scraping.Scraper(httpc, url_builder, settings)
+    scraper = scraping.Scraper(httpc, url_builder, ctx.obj['storage'], settings)
     scraper.run()
 
 
@@ -28,6 +29,7 @@ def run(ctx):
 @click.pass_context
 def newrun(ctx):
     """Reset database, then run scrape"""
+    ctx.obj['storage'].purge()
     ctx.invoke(run)
 
 
