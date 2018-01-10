@@ -7,13 +7,11 @@ from gevent.pool import Pool
 logger = logging.getLogger(__name__)
 
 
-FORUM_ENCODING = 'windows-1251'
-
-
 class Scraper:
-    def __init__(self, httpclient, url_builder, store):
+    def __init__(self, httpclient, url_builder, store, encoding=None):
         self._httpclient = httpclient
         self._urlbuilder = url_builder
+        self._encoding = encoding
         self._store = store
 
     def run(self):
@@ -27,34 +25,26 @@ class Scraper:
 
     def scrape_all(self, pagegen):
         urls = itertools.starmap(self._urlbuilder.page_url, pagegen)
-        for req in self._httpclient.multiget(urls):
-            resp = req.response
-            if resp is None:
-                logger.warn("%s - %s" % (req.url, req.exception))
-                continue
-
-            elif not resp.ok:
-                logger.warn("%s - %s (%.3f s)" % (req.url, resp.reason, resp.elapsed.total_seconds()))
-                continue
-
-            resp.encoding = FORUM_ENCODING
-            html = resp.text
-            torrent_dicts = list(parsing.extract_torrents(html, req.url))
-            logger.debug("%s - (%.3f s) - %d" % (req.url, resp.elapsed.total_seconds(), len(torrent_dicts)))
+        for resp in self._httpclient.multifetch(urls):
+            resp.encoding = self._encoding
+            torrent_dicts = list(parsing.extract_torrents(resp.text, resp.url))
+            logger.debug("%s - (%.3f s) - %d" % (resp.url, resp.elapsed.total_seconds(), len(torrent_dicts)))
             self._store.put_all(torrent_dicts)
 
     def forum_ids(self):
         url = self._urlbuilder.map_url()
-        maprequest = next(self._httpclient.multiget([url]))
-        html = maprequest.response.text
-        return parsing.extract_forum_ids(html, url)
+        resp = next(self._httpclient.multifetch([url]))
+        if self._encoding is None:
+            self._encoding = resp.apparent_encoding
+            logger.debug('Autodetected forum encoding as %s' % self._encoding)
+        resp.encoding = self._encoding
+        return parsing.extract_forum_ids(resp.text, url)
 
     def forum_npages(self, fids):
         url2fid = {self._urlbuilder.page_url(fid): fid for fid in fids}
-        for req in self._httpclient.multiget(url2fid.keys()):
-            html = req.response.text
-            npages = parsing.extract_num_pages(html, req.url)
-            yield (url2fid[req.url], npages)
+        for resp in self._httpclient.multifetch(url2fid.keys()):
+            npages = parsing.extract_num_pages(resp.text, resp.url)
+            yield (url2fid[resp.url], npages)
 
 
 def all_pages(fid, num_pages):

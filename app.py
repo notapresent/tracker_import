@@ -19,7 +19,7 @@ class App:
     def run(self):
         httpc = httpclient.GrequestsHttpClient(self._pool)
         url_builder = urlbuilder.URLBuilder(self.settings.FORUM_URL)
-        scraper = scraping.Scraper(httpc, url_builder, self.storage)
+        scraper = scraping.Scraper(httpc, url_builder, self.storage, encoding=self.settings.HTML_ENCODING)
         scraper.run()
         self._pool.join()
 

@@ -8,16 +8,24 @@ class GrequestsHttpClient:
         http_max_pool_size = max_conns if max_conns is not None else pool.size
         self._session = make_session(http_max_pool_size)
 
-    def multiget(self, urls):
-
-        def send(r):
-            return r.send()
-
+    def multifetch(self, urls):
         reqs = map(lambda u: grequests.request('GET', u, session=self._session), urls)
-        for request in self._pool.imap_unordered(send, reqs):
-            yield request
+        for request in self._pool.imap_unordered(lambda r: r.send(), reqs):
+            response = request.response
 
-        # self._pool.join()
+            if response is None:
+                raise HttpError("Failed to fetch %s" % request.url) from request.exception
+                continue
+
+            elif not response.ok:
+                raise HttpError("Failed to fetch %s : %s" % (request.url, response.reason))
+                continue
+
+            yield response
+
+
+class HttpError(Exception):
+    pass
 
 
 def make_session(http_max_pool_size):

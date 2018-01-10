@@ -29,7 +29,7 @@ def newrun(ctx):
 def purge(ctx):
     """Purge storage"""
     ctx.obj['app'].purge()
-    ctx.invoke(run)
+
 
 
 if __name__ == '__main__':
