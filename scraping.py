@@ -20,7 +20,8 @@ class Scraper:
         fid_npages = list(self.forum_npages(fids))
         logger.info('%d pages in %d forums' % (sum(map(lambda t: t[1], fid_npages)), len(fid_npages)))
         forum_pages = ForumPages(fid_npages)
-        self.scrape_all(forum_pages)
+        with self._store:
+            self.scrape_all(forum_pages)
         logger.info('Scrape finished')
 
     def scrape_all(self, pagegen):
@@ -36,7 +37,7 @@ class Scraper:
         resp = next(self._httpclient.multifetch([url]))
         if self._encoding is None:
             self._encoding = resp.apparent_encoding
-            logger.debug('Autodetected forum encoding as %s' % self._encoding)
+            logger.debug('Autodetected html encoding as %s' % self._encoding)
         resp.encoding = self._encoding
         return parsing.extract_forum_ids(resp.text, url)
 

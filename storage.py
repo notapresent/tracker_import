@@ -2,6 +2,8 @@ import logging
 import os
 import glob
 import ujson as json
+from gevent import Greenlet, subprocess
+from perfstats import Timer
 
 
 logger = logging.getLogger(__name__)
@@ -21,8 +23,6 @@ class JsonlStorage:
         self.ensure_dir()
 
     def put_all(self, items):
-        if self._fp is None:
-            self.openfile()
         for item in items:
             json.dump(item, self._fp, ensure_ascii=False)
             self._fp.write("\n")
@@ -81,10 +81,36 @@ class WebdavWrapper:
         self._store.put_all(records)
 
     def file_done(self, filename):
-        self.upload_file(filename)
-        # os.unlink(filename)   # TODO
+        self.start_upload(filename)
 
-    def upload_file(self, filename):
+    def start_upload(self, filename):
+        gr = Greenlet(self.do_upload, filename)
+        gr.link_value(self.upload_done)
+        self._pool.start(gr)
+
+    def do_upload(self, filename):
+        cmd = self.upload_cmd(filename)
+        with Timer() as t:
+            logger.debug('Uploading %s to %s' % (filename, cmd[-1]))
+            try:
+                subprocess.check_call(cmd)
+            except subprocess.CalledProcessError as e:
+                logger.exception(e)
+                raise
+        return (t, filename)
+
+    def upload_done(self, greenlet):
+        timer, filename = greenlet.get()
+        os.unlink(filename)
+        logger.debug("Uploaded %s in %.3f" % (filename, timer.elapsed))
+
+    def upload_cmd(self, filename):
         file_url = '%s/%s' % (self._url, os.path.basename(filename))
-        cmd = 'curl %s -T %s %s' % (self._curl_options, filename, file_url)
-        logger.info("Executing %s" % cmd)
+        return ['curl', '-s', self._curl_options, ("-T%s" % filename), file_url]
+
+    def __enter__(self):
+        self._store.__enter__()
+        return self
+
+    def __exit__(self, type, value, tb):
+        self._store.__exit__(type, value, tb)
