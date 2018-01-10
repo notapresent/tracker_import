@@ -68,6 +68,9 @@ class JsonlStorage:
     def filename(self):
         return "%s/%d.%s" % (self._dirpath, self._seq, self.SUFFIX)
 
+    def __repr__(self):
+        return "<JsonlStorage dirpath=%s chunk_size=%d>" % (self._dirpath, self._chunk_size)
+
 
 class WebdavWrapper:
     def __init__(self, store, pool, url, curl_options=''):
@@ -114,3 +117,6 @@ class WebdavWrapper:
 
     def __exit__(self, type, value, tb):
         self._store.__exit__(type, value, tb)
+
+    def __repr__(self):
+        return "<WebdavWrapper url=%s wrapping %r>" % (self._url, self._store)

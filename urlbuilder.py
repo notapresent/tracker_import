@@ -17,3 +17,6 @@ class URLBuilder:
 
     def topic_url(self, topic_id):
         return "%sviewtopic.php?t=%d" % (self.base_url, topic_id)
+
+    def __repr__(self):
+        return "<URLBuilder base_url=%s per_page=%d>" % (self.base_url, self.per_page)

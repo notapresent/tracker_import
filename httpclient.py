@@ -3,10 +3,13 @@ import grequests
 
 
 class GrequestsHttpClient:
-    def __init__(self, pool, max_conns=None):
+    DEFAULT_RETRIES = 5
+
+    def __init__(self, pool, max_conns=None, num_retries=DEFAULT_RETRIES):
         self._pool = pool
-        http_max_pool_size = max_conns if max_conns is not None else pool.size
-        self._session = make_session(http_max_pool_size)
+        self._http_max_pool_size = pool.size if max_conns is None else max_conns
+        self._num_retries = num_retries
+        self._session = make_session(self._http_max_pool_size, self._num_retries)
 
     def multifetch(self, urls):
         reqs = map(lambda u: grequests.request('GET', u, session=self._session), urls)
@@ -21,15 +24,18 @@ class GrequestsHttpClient:
 
             yield response
 
+    def __repr__(self):
+        return "<GrequestsHttpClient max_conns=%d num_retries=%d>" % (self._http_max_pool_size, self._num_retries)
+
 
 class HttpError(Exception):
     pass
 
 
-def make_session(http_max_pool_size):
+def make_session(http_max_pool_size, num_retries):
     session = grequests.Session()
     adapter = requests.adapters.HTTPAdapter(
-        max_retries=5,
+        max_retries=num_retries,
         pool_maxsize=http_max_pool_size
     )
     session.mount('http://', adapter)

@@ -15,11 +15,11 @@ class Scraper:
         self._store = store
 
     def run(self):
-        logger.info('Starting scrape')
-        fids = self.forum_ids()
-        fid_npages = list(self.forum_npages(fids))
-        logger.info('%d pages in %d forums' % (sum(map(lambda t: t[1], fid_npages)), len(fid_npages)))
-        forum_pages = ForumPages(fid_npages)
+        logger.info('Starting scrape with %s, %s, %s' % (self._httpclient, self._urlbuilder, self._store))
+        fids_npages = list(self.forum_npages(self.forum_ids()))
+        forum_pages = ForumPages(fids_npages)
+        logger.info('%d pages in %d forums. Encoding is %s' % (forum_pages.size(), len(fids_npages), self._encoding))
+
         with self._store:
             self.scrape_all(forum_pages)
         logger.info('Scrape finished')
@@ -56,7 +56,7 @@ class ForumPages:
     def __init__(self, tuples):
         self.tuples = tuples
 
-    def __len__(self):
+    def size(self):
         return sum([t[1] for t in self.tuples])
 
     def __iter__(self):
