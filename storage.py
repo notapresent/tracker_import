@@ -102,7 +102,7 @@ class WebdavWrapper:
         with Timer() as t:
             logger.debug('Uploading %s to %s' % (filename, cmd[-1]))
             try:
-                subprocess.check_call(cmd)
+                subprocess.check_call(cmd, stdout=open(os.devnull, 'wb'))
             except subprocess.CalledProcessError as e:
                 logger.exception(e)
                 raise
