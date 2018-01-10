@@ -63,4 +63,3 @@ class JsonlStorage:
 
     def filename(self):
         return "%s/%d%s" % (self._dirpath, self._seq, self.SUFFIX)
-

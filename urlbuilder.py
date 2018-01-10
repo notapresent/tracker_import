@@ -1,5 +1,6 @@
 class URLBuilder:
     TORRENTS_PER_PAGE = 50
+
     def __init__(self, base_url, per_page=TORRENTS_PER_PAGE):
         self.base_url = base_url
         self.per_page = per_page
@@ -16,4 +17,3 @@ class URLBuilder:
 
     def topic_url(self, topic_id):
         return "%sviewtopic.php?t=%d" % (self.base_url, topic_id)
-

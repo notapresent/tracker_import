@@ -1,22 +1,17 @@
 import logging
 import parsing
 import itertools
-import requests
-import grequests
 from gevent.pool import Pool
-
 
 
 logger = logging.getLogger(__name__)
 
 
 FORUM_ENCODING = 'windows-1251'
-CONCURRENCY = 16
 
 
 class Scraper:
-    def __init__(self, httpclient, url_builder, store, settings):
-        self._cfg = settings
+    def __init__(self, httpclient, url_builder, store):
         self._httpclient = httpclient
         self._urlbuilder = url_builder
         self._store = store
@@ -46,9 +41,7 @@ class Scraper:
             html = resp.text
             torrent_dicts = list(parsing.extract_torrents(html, req.url))
             logger.debug("%s - (%.3f s) - %d" % (req.url, resp.elapsed.total_seconds(), len(torrent_dicts)))
-
             self._store.put_all(torrent_dicts)
-
 
     def forum_ids(self):
         url = self._urlbuilder.map_url()
@@ -77,32 +70,3 @@ class ForumPages:
 
     def __iter__(self):
         return itertools.chain.from_iterable(itertools.starmap(all_pages, self.tuples))
-
-
-class GRequestsHttpClient:
-    def __init__(self, concurrency=CONCURRENCY):
-        self._concurrency = concurrency
-        self._session = make_session(concurrency)
-        self._pool = Pool(concurrency)
-
-    def multiget(self, urls):
-
-        def send(r):
-            return r.send()
-
-        requests = map(lambda u: grequests.request('GET', u, session=self._session), urls)
-        for request in self._pool.imap_unordered(send, requests):
-            yield request
-
-        self._pool.join()
-
-
-def make_session(concurrency):
-    session = grequests.Session()
-    adapter = requests.adapters.HTTPAdapter(
-        max_retries=5,
-        pool_maxsize=concurrency
-    )
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
-    return session
