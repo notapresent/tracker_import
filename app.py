@@ -13,24 +13,29 @@ class App:
     def __init__(self, settings):
         self.settings = settings
         init_logging(self.settings.LOG_LEVEL)
-        self._storage = None
+        self._localstore = None
         self._pool = Pool(self.settings.CONCURRENCY)
 
     def run(self):
         httpc = httpclient.GrequestsHttpClient(self._pool)
         url_builder = urlbuilder.URLBuilder(self.settings.FORUM_URL)
-        scraper = scraping.Scraper(httpc, url_builder, self.storage, encoding=self.settings.HTML_ENCODING)
+        webstorage = storage.WebdavWrapper(
+            self.localstore,
+            self._pool,
+            self.settings.STORAGE_URL,
+            self.settings.STORAGE_CURLOPTS)
+        scraper = scraping.Scraper(httpc, url_builder, webstorage, encoding=self.settings.HTML_ENCODING)
         scraper.run()
         self._pool.join()
 
     def purge(self):
-        self.storage.purge()
+        self.localstore.purge()
 
     @property
-    def storage(self):
-        if self._storage is None:
-            self._storage = storage.JsonlStorage('./data', 10000)
-        return self._storage
+    def localstore(self):
+        if self._localstore is None:
+            self._localstore = storage.JsonlStorage('./data', self.settings.STORAGE_BATCH_SIZE)
+        return self._localstore
 
 
 def init_logging(level=logging.INFO):
