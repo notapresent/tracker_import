@@ -1,5 +1,4 @@
 import logging
-import perfstats
 import os
 import glob
 import ujson as json

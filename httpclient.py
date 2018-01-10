@@ -15,11 +15,9 @@ class GrequestsHttpClient:
 
             if response is None:
                 raise HttpError("Failed to fetch %s" % request.url) from request.exception
-                continue
 
             elif not response.ok:
                 raise HttpError("Failed to fetch %s : %s" % (request.url, response.reason))
-                continue
 
             yield response
 

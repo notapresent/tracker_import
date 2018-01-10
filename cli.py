@@ -31,6 +31,5 @@ def purge(ctx):
     ctx.obj['app'].purge()
 
 
-
 if __name__ == '__main__':
     cli(obj={})
