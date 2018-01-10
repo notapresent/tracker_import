@@ -24,11 +24,15 @@ class JsonlStorage:
 
     def put_all(self, items):
         for item in items:
-            json.dump(item, self._fp, ensure_ascii=False)
-            self._fp.write("\n")
-            self._nitems += 1
-            if self._nitems == self._chunk_size:
-                self.next_chunk()
+            self.put(item)
+
+    def put(self, record):
+        json.dump(record, self._fp, ensure_ascii=False)
+        self._fp.write("\n")
+        self._nitems += 1
+        if self._nitems == self._chunk_size:
+            self.next_chunk()
+            self._nitems = 0
 
     def ensure_dir(self):
         if not os.path.exists(self._dirpath):
@@ -43,7 +47,6 @@ class JsonlStorage:
 
     def next_chunk(self):
         self.closefile()
-        self._nitems = 0
         self._seq += 1
         self.openfile()
 
@@ -82,6 +85,9 @@ class WebdavWrapper:
 
     def put_all(self, records):
         self._store.put_all(records)
+
+    def put(self, record):
+        self._store.put(record)
 
     def file_done(self, filename):
         self.start_upload(filename)

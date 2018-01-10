@@ -21,16 +21,25 @@ class Scraper:
         logger.info('%d pages in %d forums. Encoding is %s' % (forum_pages.size(), len(fids_npages), self._encoding))
 
         with self._store:
-            self.scrape_all(forum_pages)
-        logger.info('Scrape finished')
+            total_torrents = self.scrape_all(forum_pages)
+        logger.info('Scrape finished. %d torrents found' % total_torrents)
 
-    def scrape_all(self, pagegen):
-        urls = itertools.starmap(self._urlbuilder.page_url, pagegen)
+    def torrent_dicts(self, forum_pages):
+        urls = itertools.starmap(self._urlbuilder.page_url, forum_pages)
         for resp in self._httpclient.multifetch(urls):
             resp.encoding = self._encoding
-            torrent_dicts = list(parsing.extract_torrents(resp.text, resp.url))
-            logger.debug("%s - (%.3f s) - %d" % (resp.url, resp.elapsed.total_seconds(), len(torrent_dicts)))
-            self._store.put_all(torrent_dicts)
+            torrent_dicts = parsing.extract_torrents(resp.text, resp.url)
+            num_torrents = 0
+            for td in torrent_dicts:
+                num_torrents += 1
+                yield td
+            logger.debug("%s - (%.3f s) - %d" % (resp.url, resp.elapsed.total_seconds(), num_torrents))
+
+    def scrape_all(self, pagegen):
+        total_torrents = 0
+        for torrent_dict in self.torrent_dicts(pagegen):
+            total_torrents += 1
+            self._store.put(torrent_dict)
 
     def forum_ids(self):
         url = self._urlbuilder.map_url()
