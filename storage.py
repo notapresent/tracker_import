@@ -62,4 +62,4 @@ class JsonlStorage:
         self.closefile()
 
     def filename(self):
-        return "%s/%d%s" % (self._dirpath, self._seq, self.SUFFIX)
+        return "%s/%d.%s" % (self._dirpath, self._seq, self.SUFFIX)
