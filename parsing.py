@@ -1,8 +1,12 @@
 import logging
 import lxml.html
+from torrent import TorrentStatus
 
 
 logger = logging.getLogger(__name__)
+
+
+MARKER_PREMOD = 'Раздача ожидает проверки модератором<br><br>Просмотр пока недоступен'
 
 
 def extract_forum_ids(html, base_url):
@@ -58,28 +62,40 @@ def extract_asize(row):
 
 def parse_asize(size_str):
     size, units = size_str.strip().split('\xA0')
-    if units == 'KB':
-        multiplier = 1
+    if units == 'GB':
+        multiplier = 1000000
     elif units == 'MB':
         multiplier = 1000
-    elif units == 'GB':
-        multiplier = 1000000
+    elif units == 'KB':
+        multiplier = 1
     else:
         raise ParseError("Failed to parse size from %s" % size_str)
     return int(float(size) * multiplier)
 
 
 def extract_body(html, base_url):
+    if MARKER_PREMOD in html:
+        return {
+            'body': None,
+            'status': TorrentStatus.PREMOD
+        }
+
     tree = lxml.html.fromstring(html, base_url=base_url)
     try:
         el = tree.xpath('//div[@class="post_wrap"]/div[@class="post_body"]')[0]
         attachment_blocks = el.xpath('.//fieldset[@class="attach"]')
         for block in attachment_blocks:
             block.getparent().remove(block)
-        return lxml.html.tostring(el, encoding='unicode')
+
+        return {
+            'body': lxml.html.tostring(el, encoding='unicode'),
+            'status': TorrentStatus.OK
+        }
 
     except IndexError as e:
         raise ParseError("Failed to parse body from URL %s" % base_url)
+
+
 
 class ParseError(Exception):
     pass
