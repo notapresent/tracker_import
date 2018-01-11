@@ -9,9 +9,14 @@ logger = logging.getLogger(__name__)
 MARKER_PREMOD = 'Раздача ожидает проверки модератором<br><br>Просмотр пока недоступен'
 
 
+def _tree(html, base_url):
+    return lxml.html.fromstring(html)
+    # return lxml.html.fromstring(html, base_url=base_url)
+
+
 def extract_forum_ids(html, base_url):
     """ html -> [fid, ...]"""
-    tree = lxml.html.fromstring(html, base_url=base_url)
+    tree = _tree(html, base_url)
     container = tree.xpath('//*[@id="forums_wrap"]/table/tr/td[1]/div[4]')[0]
     links = container.xpath(".//span[@class='sf_title']/a[@href]")
     for link in links:
@@ -20,7 +25,7 @@ def extract_forum_ids(html, base_url):
 
 
 def extract_torrents(html, base_url):
-    tree = lxml.html.fromstring(html, base_url=base_url)
+    tree = _tree(html, base_url)
     rows = tree.xpath('//*[@id="main_content_wrap"]/table[@class="forumline forum"]/tr[@id]')
     for row in rows:
         try:
@@ -30,7 +35,7 @@ def extract_torrents(html, base_url):
 
 
 def extract_num_pages(html, base_url):
-    tree = lxml.html.fromstring(html, base_url=base_url)
+    tree = _tree(html, base_url)
     page_links = tree.xpath('//*[@id="pagination"]/p[2]/a')
     if len(page_links) < 2:
         return 1
@@ -80,7 +85,7 @@ def extract_body(html, base_url):
             'status': TorrentStatus.PREMOD
         }
 
-    tree = lxml.html.fromstring(html, base_url=base_url)
+    tree = _tree(html, base_url)
     try:
         el = tree.xpath('//div[@class="post_wrap"]/div[@class="post_body"]')[0]
         attachment_blocks = el.xpath('.//fieldset[@class="attach"]')
@@ -94,7 +99,6 @@ def extract_body(html, base_url):
 
     except IndexError as e:
         raise ParseError("Failed to parse body from URL %s" % base_url)
-
 
 
 class ParseError(Exception):
