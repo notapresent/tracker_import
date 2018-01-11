@@ -13,7 +13,7 @@ class GrequestsHttpClient:
 
     def multifetch(self, urls):
         reqs = map(lambda u: grequests.request('GET', u, session=self._session), urls)
-        for request in self._pool.imap_unordered(lambda r: r.send(), reqs):
+        for request in self._pool.imap_unordered(send, reqs):
             response = request.response
 
             if response is None:
@@ -41,3 +41,7 @@ def make_session(http_max_pool_size, num_retries):
     session.mount('http://', adapter)
     session.mount('https://', adapter)
     return session
+
+
+def send(r):
+    return r.send()
