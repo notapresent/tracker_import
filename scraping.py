@@ -1,6 +1,6 @@
 import logging
 import parsing
-import itertools
+from itertools import starmap, chain, repeat
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class Scraper:
         logger.info('Scrape finished. %d torrents found' % total_torrents)
 
     def torrent_dicts(self, forum_pages):
-        urls = itertools.starmap(self._urlbuilder.page_url, forum_pages)
+        urls = starmap(self._urlbuilder.page_url, forum_pages)
         for resp in self._httpclient.multifetch(urls):
             resp.encoding = self._encoding
             torrent_dicts = parsing.extract_torrents(resp.text, resp.url)
@@ -59,7 +59,7 @@ class Scraper:
 
 
 def all_pages(fid, num_pages):
-    return zip(itertools.repeat(fid), range(1, num_pages + 1))
+    return zip(repeat(fid), range(1, num_pages + 1))
 
 
 class ForumPages:
@@ -70,4 +70,4 @@ class ForumPages:
         return sum([t[1] for t in self.tuples])
 
     def __iter__(self):
-        return itertools.chain.from_iterable(itertools.starmap(all_pages, self.tuples))
+        return chain.from_iterable(starmap(all_pages, self.tuples))
