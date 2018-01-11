@@ -19,12 +19,7 @@ class App:
     def run(self):
         httpc = httpclient.GrequestsHttpClient(self._pool)
         url_builder = urlbuilder.URLBuilder(self.settings.FORUM_URL)
-        webstorage = storage.WebdavWrapper(
-            self.localstore,
-            self._pool,
-            self.settings.STORAGE_URL,
-            self.settings.STORAGE_CURLOPTS)
-        scraper = scraping.Scraper(httpc, url_builder, webstorage, encoding=self.settings.HTML_ENCODING)
+        scraper = scraping.Scraper(httpc, url_builder, self.localstore, encoding=self.settings.HTML_ENCODING)
         scraper.run()
         self._pool.join()
 
@@ -34,7 +29,9 @@ class App:
     @property
     def localstore(self):
         if self._localstore is None:
-            self._localstore = storage.JsonlStorage('./data', self.settings.STORAGE_BATCH_SIZE)
+            self._localstore = storage.JsonlStorage(
+                self.settings.STORAGE_PATH,
+                self.settings.STORAGE_BATCH_SIZE)
         return self._localstore
 
 

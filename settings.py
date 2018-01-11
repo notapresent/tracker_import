@@ -3,7 +3,7 @@ import logging
 
 # Required settings
 FORUM_URL = os.environ['FORUM_URL']
-STORAGE_URL = os.environ['STORAGE_URL']
+STORAGE_PATH = os.environ['STORAGE_PATH']
 
 # Optional settings with sensible defaults
 CONCURRENCY = int(os.environ.get('CONCURRENCY', 16))
