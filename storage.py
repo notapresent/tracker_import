@@ -65,7 +65,7 @@ class JsonlStorage:
         self.openfile()
         return self
 
-    def __exit__(self, type, value, tb):
+    def __exit__(self, exc_type, exc_value, exc_tb):
         self.closefile()
 
     def filename(self):
@@ -106,7 +106,7 @@ class WebdavWrapper:
             except subprocess.CalledProcessError as e:
                 logger.exception(e)
                 raise
-        return (t, filename)
+        return t, filename
 
     def upload_done(self, greenlet):
         timer, filename = greenlet.get()
@@ -121,8 +121,8 @@ class WebdavWrapper:
         self._store.__enter__()
         return self
 
-    def __exit__(self, type, value, tb):
-        self._store.__exit__(type, value, tb)
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self._store.__exit__(exc_type, exc_value, exc_tb)
 
     def __repr__(self):
         return "<WebdavWrapper url=%s wrapping %r>" % (self._url, self._store)

@@ -1,7 +1,6 @@
 import logging
 import parsing
 import itertools
-from gevent.pool import Pool
 
 
 logger = logging.getLogger(__name__)

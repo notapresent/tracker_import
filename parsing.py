@@ -30,7 +30,7 @@ def extract_torrents(html, base_url):
     for row in rows:
         try:
             yield parse_row(row)
-        except SkipRow as e:
+        except SkipRow:
             pass
 
 
@@ -98,7 +98,7 @@ def extract_body(html, base_url):
         }
 
     except IndexError as e:
-        raise ParseError("Failed to parse body from URL %s" % base_url)
+        raise ParseError("Failed to parse body from URL %s" % base_url) from e
 
 
 class ParseError(Exception):
