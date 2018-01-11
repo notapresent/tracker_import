@@ -41,6 +41,8 @@ class Scraper:
             total_torrents += 1
             self._store.put(torrent_dict)
 
+        return total_torrents
+
     def forum_ids(self):
         url = self._urlbuilder.map_url()
         resp = next(self._httpclient.multifetch([url]))
