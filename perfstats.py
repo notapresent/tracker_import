@@ -1,5 +1,5 @@
 import time
-
+import resource
 
 class Timer:
     def __init__(self):
@@ -25,3 +25,7 @@ class Timer:
             return self._end - self._start
         else:
             return time.time() - self._start
+
+
+def get_rss():
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss

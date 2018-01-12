@@ -13,7 +13,7 @@ def cli(ctx):
 @click.pass_context
 def run(ctx):
     """Run scrape"""
-    ctx.obj['app'].run()
+    ctx.obj['app'].start()
 
 
 @cli.command()

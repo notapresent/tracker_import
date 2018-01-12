@@ -15,12 +15,13 @@ class App:
         init_logging(self.settings.LOG_LEVEL)
         self._localstore = None
         self._pool = Pool(self.settings.CONCURRENCY)
+        self._scraper = None
 
-    def run(self):
-        httpc = httpclient.GrequestsHttpClient(self._pool)
+    def start(self):
+        httpc = httpclient.GrequestsHttpClient(self._pool, encoding=self.settings.HTML_ENCODING)
         url_builder = urlbuilder.URLBuilder(self.settings.FORUM_URL)
-        scraper = scraping.Scraper(httpc, url_builder, self.localstore, encoding=self.settings.HTML_ENCODING)
-        scraper.run()
+        self._scraper = scraping.ForumScraper(httpc, url_builder, self.localstore)
+        self._scraper.run()
         self._pool.join()
 
     def purge(self):
@@ -38,6 +39,4 @@ class App:
 def init_logging(level=logging.INFO):
     """Set up logging parameters"""
     logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s', level=level)
-
-    for pkgname in ('urllib3', 'chardet'):
-        logging.getLogger(pkgname).setLevel(logging.WARN)
+    # logging.getLogger('urllib3').setLevel(logging.WARN)

@@ -1,6 +1,7 @@
 import logging
+import traceback
 import lxml.html
-from torrent import TorrentStatus
+from structs import TorrentStatus, Forum, Torrent
 
 
 logger = logging.getLogger(__name__)
@@ -10,18 +11,16 @@ MARKER_PREMOD = 'Раздача ожидает проверки модерато
 
 
 def _tree(html, base_url):
-    return lxml.html.fromstring(html)
-    # return lxml.html.fromstring(html, base_url=base_url)
+    return lxml.html.fromstring(html, base_url=base_url)
 
 
-def extract_forum_ids(html, base_url):
-    """ html -> [fid, ...]"""
+def extract_forums(html, base_url):
     tree = _tree(html, base_url)
     container = tree.xpath('//*[@id="forums_wrap"]/table/tr/td[1]/div[4]')[0]
     links = container.xpath(".//span[@class='sf_title']/a[@href]")
     for link in links:
         fid_str = link.attrib['href'].split("=")[1]
-        yield int(fid_str)
+        yield Forum(int(fid_str), link.text.strip())
 
 
 def extract_torrents(html, base_url):
@@ -44,11 +43,12 @@ def extract_num_pages(html, base_url):
 
 
 def parse_row(row):
-    return {
-        'tid': int(row.attrib['id'].split('-')[1]),
-        'asize': extract_asize(row),
-        'title': row.xpath('td[@class="tt"]/a')[0].text_content()
-    }
+    return Torrent(
+        id=int(row.attrib['id'].split('-')[1]),
+        title=row.xpath('td[@class="tt"]/a')[0].text_content(),
+        status=TorrentStatus.NEW,
+        asize=extract_asize(row)
+    )
 
 
 def extract_asize(row):
@@ -98,7 +98,10 @@ def extract_body(html, base_url):
         }
 
     except IndexError as e:
-        raise ParseError("Failed to parse body from URL %s" % base_url) from e
+        return {
+            'body': traceback.format_exc(),
+            'status': TorrentStatus.PARSE_ERROR
+        }
 
 
 class ParseError(Exception):
