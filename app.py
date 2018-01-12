@@ -39,4 +39,4 @@ class App:
 def init_logging(level=logging.INFO):
     """Set up logging parameters"""
     logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s', level=level)
-    # logging.getLogger('urllib3').setLevel(logging.WARN)
+    logging.getLogger('urllib3').setLevel(logging.WARN)
