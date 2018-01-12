@@ -3,7 +3,7 @@ from itertools import starmap, chain, repeat
 
 import parsing
 from httpclient import HttpError
-import perfstats
+from perfstats import StopWatch
 
 
 logger = logging.getLogger(__name__)
@@ -28,13 +28,13 @@ class ForumScraper:
     def forum_seq(self, raw_forums):
         reqs = map(self.forum_page_request, raw_forums)
         for resp in self._httpclient.multisend(reqs):
-            forum = resp._extra
+            forum, _ = resp._extra
             forum.num_pages = parsing.extract_num_pages(resp.text, resp.url)
             yield forum
 
     def forum_page_request(self, forum, page=1):
         url = self._urlbuilder.page_url(forum.id, page)
-        return self._httpclient.make_request(url, extra=forum)
+        return self._httpclient.make_request(url, extra=(forum, page))
 
     def raw_forum_seq(self):
         req = self._httpclient.make_request(self._urlbuilder.map_url())
@@ -44,11 +44,19 @@ class ForumScraper:
     def raw_torrents(self):
         page_requests = starmap(self.forum_page_request, self.forum_pageiter)
         for resp in self._httpclient.multisend(page_requests):
-            forum = resp._extra
-            torrents = parsing.extract_torrents(resp.text, resp.url)
+            forum, page = resp._extra
+            sw = StopWatch("P#%d_%d" % (forum.id, page))
+            sw.register_segment("F", resp.elapsed.total_seconds())
+            with sw.register("P"):
+                torrents = parsing.extract_torrents(resp.text, resp.url)
+
+            num_torrents = 0
             for torrent in torrents:
                 torrent.forum_id = forum.id
                 yield torrent
+                num_torrents += 1
+
+            logger.info("PERF %s %d" % (sw, num_torrents))
 
     def topic_request(self, torrent):
         url = self._urlbuilder.topic_url(torrent.id)
@@ -58,10 +66,14 @@ class ForumScraper:
         reqs = map(self.topic_request, self.raw_torrents())
         for resp in self._httpclient.multisend(reqs):
             torrent = resp._extra
-            bs_dict = parsing.extract_body(resp.text, resp.url)
+            sw = StopWatch("T#%d" % torrent.id)
+            sw.register_segment("F", resp.elapsed.total_seconds())
+            with sw.register("P"):
+                bs_dict = parsing.extract_body(resp.text, resp.url)
             torrent.body = bs_dict['body']
             torrent.status = bs_dict['status']
             yield torrent
+            logger.info("PERF %s %d" % (sw, len(torrent.body)))
 
     def run(self):
         logger.info("Scrape started")
