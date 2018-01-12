@@ -73,7 +73,7 @@ class ForumScraper:
             torrent.body = bs_dict['body']
             torrent.status = bs_dict['status']
             yield torrent
-            logger.info("PERF %s %d" % (sw, len(torrent.body)))
+            logger.info("PERF %s %d" % (sw, len(torrent.body) if torrent.body else 0))
 
     def run(self):
         logger.info("Scrape started")
