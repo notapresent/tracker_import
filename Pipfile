@@ -21,6 +21,6 @@ python_version = "3.5"
 [dev-packages]
 
 bpython = "*"
-requests = "*"
+requests = ">=2.20.0"
 snakeviz = "*"
 pycodestyle = "*"
